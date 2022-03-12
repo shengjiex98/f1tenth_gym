@@ -12,5 +12,6 @@ setup(name='f110_gym',
                         'numba==0.54.1',
                         'pyyaml>=5.3.1',
                         'pyglet',
-                        'pyopengl']
+                        'pyopengl',
+                        'wheel']
       )
