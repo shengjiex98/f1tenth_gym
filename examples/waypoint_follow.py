@@ -260,7 +260,7 @@ def main():
     while not done:
         if not count:
             speed, steer = planner.plan(obs['poses_x'][0], obs['poses_y'][0], obs['poses_theta'][0], work['tlad'], work['vgain'])
-        count = (count + 1) % 6
+        # count = (count + 1) % 6
         obs, step_reward, done, info = env.step(np.array([[steer, speed]]))
         laptime += step_reward
         env.render(mode='human')
