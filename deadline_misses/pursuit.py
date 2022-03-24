@@ -23,37 +23,15 @@ class PurePursuitPlanner:
         self.miss_last = False
         self.saved_state = None
 
-        self.path = collections.deque(maxlen=500)
-        self.drawn_path = []
-
     def render_path(self, e):
         """
         Renders the path that the vehicle has followed
         """
-        if len(self.path) == 0:
-            return
-
-        # points = [self.path[x] for x in range(0, len(self.path), 5)]
-        points = self.path
-        points = np.array(points)
-        
-        scaled_points = 50.*points
-
-        for i in range(points.shape[0]):
-            if len(self.drawn_path) < points.shape[0]:
-                b = e.batch.add(1, GL_LINE_STRIP, None, ('v3f/stream', [scaled_points[i, 0], scaled_points[i, 1], 0.]),
-                                ('c3B/stream', [183, 193, 222]))
-                self.drawn_path.append(b)
-            else:
-                self.drawn_path[i].vertices = [scaled_points[i, 0], scaled_points[i, 1], 0.]
 
     def plan(self, pose_x, pose_y, pose_theta, lookahead_distance, miss=False, hold=True, kill=True):
         """
         gives actuation given observation
         """
-        # Save path for rendering
-        self.path.append([pose_x, pose_y])
-
         # Calculates the steering angle
         tan_delta = ((2 * self.wheelbase / lookahead_distance**2) * 
                      (-np.sqrt(lookahead_distance**2 - pose_y**2) * np.sin(pose_theta) - pose_y * np.cos(pose_theta)))
@@ -98,6 +76,9 @@ def main():
 
     planner = PurePursuitPlanner(conf, 0.17145+0.15875)
 
+    path = collections.deque(maxlen=500)
+    drawn_path = []
+
     def render_callback(env_renderer):
         # custom extra drawing function
 
@@ -114,27 +95,48 @@ def main():
         e.top = top + 800
         e.bottom = bottom - 800
 
-        planner.render_path(env_renderer)
+        if len(path) == 0:
+            return
+
+        # points = [self.path[x] for x in range(0, len(self.path), 5)]
+        points = path
+        points = np.array(points)
+        
+        scaled_points = 50.*points
+
+        for i in range(points.shape[0]):
+            if len(drawn_path) < points.shape[0]:
+                b = e.batch.add(1, GL_LINE_STRIP, None, ('v3f/stream', [scaled_points[i, 0], scaled_points[i, 1], 0.]),
+                                ('c3B/stream', [183, 193, 222]))
+                drawn_path.append(b)
+            else:
+                drawn_path[i].vertices = [scaled_points[i, 0], scaled_points[i, 1], 0.]
 
     env = gym.make('f110_gym:f110-v0', map=conf.map_path, map_ext=conf.map_ext, num_agents=1)
     env.add_render_callback(render_callback)
     
-    obs, step_reward, done, info = env.reset(np.array([[conf.sx, conf.sy, conf.stheta]]))
+    obs, step_reward, done, info = env.reset(np.array([[conf.sx, conf.sy, conf.stheta, conf.sv]]))
     env.render()
 
     laptime = 0.0
     start = time.time()
 
-    count = 0
+    period = 15     # in centiseconds
 
+    count = 0
     while not done:
+        # Save path for rendering
+        path.append([obs['poses_x'][0], obs['poses_y'][0]])
+
         if not count:
             speed, steer = planner.plan(obs['poses_x'][0], obs['poses_y'][0], obs['poses_theta'][0], 
                                         work['tlad'], miss=False, hold=True, kill=True)
-        count = (count + 1) % 17
+        count = (count + 1) % period
         obs, step_reward, done, info = env.step(np.array([[steer, speed]]))
         laptime += step_reward
         env.render(mode='human')
+
+        # time.sleep(.5)
         
     print('Sim elapsed time:', laptime, 'Real elapsed time:', time.time()-start)
 

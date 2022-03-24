@@ -186,6 +186,7 @@ class RaceCar(object):
         # clear state
         self.state = np.zeros((7, ))
         self.state[0:2] = pose[0:2]
+        self.state[3] = pose[3]
         self.state[4] = pose[2]
         self.steer_buffer = np.empty((0, ))
         # reset scan random generator

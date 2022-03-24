@@ -11,6 +11,7 @@ map_ext: '.png'
 sx: 0.0
 sy: 1.0
 stheta: -1.0
+sv: 6.5
 
 # raceline path and indices
 wpt_path: './example_waypoints.csv'
