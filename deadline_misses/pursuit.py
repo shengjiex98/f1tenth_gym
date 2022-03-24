@@ -13,10 +13,11 @@ class PurePursuitPlanner:
     """
     Example Planner
     """
-    def __init__(self, conf, wb):
+    def __init__(self, conf, wb, hold=True, kill=True):
         self.wheelbase = wb
         self.conf = conf
-        self.max_reacquire = 20
+        self.hold = hold
+        self.kill = kill
 
         # Used for deadline misses handling
         self.last = 0
@@ -28,7 +29,7 @@ class PurePursuitPlanner:
         Renders the path that the vehicle has followed
         """
 
-    def plan(self, pose_x, pose_y, pose_theta, lookahead_distance, miss=False, hold=True, kill=True):
+    def plan(self, pose_x, pose_y, pose_theta, lookahead_distance, miss=False):
         """
         gives actuation given observation
         """
@@ -38,15 +39,15 @@ class PurePursuitPlanner:
         steering_angle = np.arctan(tan_delta)
 
         # Handle misses
-        if kill:
+        if self.kill:
             if miss:
-                result = self.last if hold else 0
+                result = self.last if self.hold else 0
             else:
                 result = steering_angle
         else:
             # Skip-next
             if miss:
-                result = self.last if hold else 0
+                result = self.last if self.hold else 0
                 if not self.miss_last:
                     # HM
                     self.saved_state = steering_angle
@@ -74,7 +75,7 @@ def main():
         conf_dict = yaml.load(file, Loader=yaml.FullLoader)
     conf = Namespace(**conf_dict)
 
-    planner = PurePursuitPlanner(conf, 0.17145+0.15875)
+    planner = PurePursuitPlanner(conf, 0.17145+0.15875, hold=True, kill=True)
 
     path = collections.deque(maxlen=500)
     drawn_path = []
@@ -130,7 +131,7 @@ def main():
 
         if not count:
             speed, steer = planner.plan(obs['poses_x'][0], obs['poses_y'][0], obs['poses_theta'][0], 
-                                        work['tlad'], miss=False, hold=True, kill=True)
+                                        work['tlad'], miss=False)
         count = (count + 1) % period
         obs, step_reward, done, info = env.step(np.array([[steer, speed]]))
         laptime += step_reward
