@@ -1,4 +1,5 @@
 import collections
+import itertools
 import time
 import yaml
 import gym
@@ -21,7 +22,7 @@ class PurePursuitPlanner:
 
         # Used for deadline misses handling
         self.last = 0
-        self.miss_last = False
+        self.hit_last = True
         self.saved_state = None
 
     def render_path(self, e):
@@ -29,7 +30,7 @@ class PurePursuitPlanner:
         Renders the path that the vehicle has followed
         """
 
-    def plan(self, pose_x, pose_y, pose_theta, lookahead_distance, miss=False):
+    def plan(self, pose_x, pose_y, pose_theta, lookahead_distance, hit=True):
         """
         gives actuation given observation
         """
@@ -40,26 +41,26 @@ class PurePursuitPlanner:
 
         # Handle misses
         if self.kill:
-            if miss:
+            if not hit:
                 result = self.last if self.hold else 0
             else:
                 result = steering_angle
         else:
             # Skip-next
-            if miss:
+            if not hit:
                 result = self.last if self.hold else 0
-                if not self.miss_last:
+                if self.hit_last:
                     # HM
                     self.saved_state = steering_angle
             else:
-                if not self.miss_last:
+                if self.hit_last:
                     # HH
                     result = steering_angle
                 else:
                     # MH
                     result = self.saved_state
         self.last = result
-        self.miss_last = miss
+        self.hit_last = hit
 
         return 6.5, result
 
@@ -122,7 +123,8 @@ def main():
     laptime = 0.0
     start = time.time()
 
-    period = 15     # in centiseconds
+    period = 1     # in centiseconds
+    hit_pattern = itertools.cycle([True] + [False] * 14)
 
     count = 0
     while not done:
@@ -131,7 +133,7 @@ def main():
 
         if not count:
             speed, steer = planner.plan(obs['poses_x'][0], obs['poses_y'][0], obs['poses_theta'][0], 
-                                        work['tlad'], miss=False)
+                                        work['tlad'], hit=next(hit_pattern))
         count = (count + 1) % period
         obs, step_reward, done, info = env.step(np.array([[steer, speed]]))
         laptime += step_reward
