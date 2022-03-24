@@ -85,6 +85,7 @@ def main():
         # custom extra drawing function
 
         e = env_renderer
+        render_size = 1200
 
         # update camera to follow car
         x = e.cars[0].vertices[::2]
@@ -92,10 +93,10 @@ def main():
         top, bottom, left, right = max(y), min(y), min(x), max(x)
         e.score_label.x = left
         e.score_label.y = top - 700
-        e.left = left - 800
-        e.right = right + 800
-        e.top = top + 800
-        e.bottom = bottom - 800
+        e.left = left - render_size
+        e.right = right + render_size
+        e.top = top + render_size
+        e.bottom = bottom - render_size
 
         if len(path) == 0:
             return
@@ -139,7 +140,7 @@ def main():
         laptime += step_reward
         env.render(mode='human')
 
-        # time.sleep(.5)
+        # time.sleep(.02)
         
     print('Sim elapsed time:', laptime, 'Real elapsed time:', time.time()-start)
 
