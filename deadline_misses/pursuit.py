@@ -37,6 +37,7 @@ class PurePursuitPlanner:
         # Calculates the steering angle
         tan_delta = ((2 * self.wheelbase / lookahead_distance**2) * 
                      (-np.sqrt(lookahead_distance**2 - pose_y**2) * np.sin(pose_theta) - pose_y * np.cos(pose_theta)))
+        # tan_delta = -2 * self.wheelbase / lookahead_distance * pose_theta
         steering_angle = np.arctan(tan_delta)
 
         # Handle misses
@@ -85,7 +86,7 @@ def main():
         # custom extra drawing function
 
         e = env_renderer
-        render_size = 1200
+        render_size = 1000
 
         # update camera to follow car
         x = e.cars[0].vertices[::2]
@@ -126,6 +127,7 @@ def main():
 
     period = 1     # in centiseconds
     hit_pattern = itertools.cycle([True] + [False] * 14)
+    # hit_pattern = itertools.cycle([True])
 
     count = 0
     while not done:
