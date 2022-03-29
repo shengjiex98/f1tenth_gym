@@ -35,10 +35,13 @@ class PurePursuitPlanner:
         gives actuation given observation
         """
         # Calculates the steering angle
-        tan_delta = ((2 * self.wheelbase / lookahead_distance**2) * 
-                     (-np.sqrt(lookahead_distance**2 - pose_y**2) * np.sin(pose_theta) - pose_y * np.cos(pose_theta)))
+        # tan_delta = ((2 * self.wheelbase / lookahead_distance**2) * 
+        #              (-np.sqrt(lookahead_distance**2 - pose_y**2) * np.sin(pose_theta) - pose_y * np.cos(pose_theta)))
         # tan_delta = -2 * self.wheelbase / lookahead_distance * pose_theta
-        steering_angle = np.arctan(tan_delta)
+        # steering_angle = np.arctan(tan_delta)
+        if (pose_theta > np.pi):
+            pose_theta -= 2 * np.pi
+        steering_angle = -(2 * self.wheelbase / lookahead_distance) * (pose_y / lookahead_distance + pose_theta)
 
         # Handle misses
         if self.kill:
