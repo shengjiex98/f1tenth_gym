@@ -6,8 +6,6 @@ import gym
 import numpy as np
 from argparse import Namespace
 
-from numba import njit
-
 from pyglet.gl import GL_POINTS, GL_LINES, GL_LINE_STRIP
 
 class PurePursuitPlanner:
@@ -35,10 +33,12 @@ class PurePursuitPlanner:
         gives actuation given observation
         """
         # Calculates the steering angle
+        # Nonlinear controller
         # tan_delta = ((2 * self.wheelbase / lookahead_distance**2) * 
         #              (-np.sqrt(lookahead_distance**2 - pose_y**2) * np.sin(pose_theta) - pose_y * np.cos(pose_theta)))
-        # tan_delta = -2 * self.wheelbase / lookahead_distance * pose_theta
         # steering_angle = np.arctan(tan_delta)
+        #
+        # Linearized controller
         if (pose_theta > np.pi):
             pose_theta -= 2 * np.pi
         steering_angle = -(2 * self.wheelbase / lookahead_distance) * (pose_y / lookahead_distance + pose_theta)
@@ -108,6 +108,7 @@ def main():
         # points = [self.path[x] for x in range(0, len(self.path), 5)]
         points = path
         points = np.array(points)
+        points = points[:, 0:2]
         
         scaled_points = 50.*points
 
@@ -128,24 +129,39 @@ def main():
     laptime = 0.0
     start = time.time()
 
-    period = 1     # in centiseconds
-    hit_pattern = itertools.cycle([True] + [False] * 14)
-    # hit_pattern = itertools.cycle([True])
+    period = 2     # in centiseconds
+    num_hit = 1
+    num_miss = 0
 
+    # hit_pattern = itertools.cycle([True] * num_hit + [False] * num_miss)
+    hit_pattern = itertools.cycle([False] * num_miss + [True] * num_hit)
+
+    delayed = 6.5, 0
+
+    time_span = 3
     count = 0
-    while not done:
-        # Save path for rendering
-        path.append([obs['poses_x'][0], obs['poses_y'][0]])
+    for i in range(0, time_span * 100):
 
         if not count:
-            speed, steer = planner.plan(obs['poses_x'][0], obs['poses_y'][0], obs['poses_theta'][0], 
-                                        work['tlad'], hit=next(hit_pattern))
+            # speed, steer = planner.plan(obs['poses_x'][0], obs['poses_y'][0], obs['poses_theta'][0], 
+            #                             work['tlad'], hit=next(hit_pattern))
+            speed, steer = delayed
+            delayed = planner.plan(obs['poses_x'][0], obs['poses_y'][0], obs['poses_theta'][0], 
+                                   work['tlad'], hit=next(hit_pattern))
+        
+        # Save path for rendering
+        path.append([obs['poses_x'][0], obs['poses_y'][0], obs['poses_theta'][0], steer])
+
         count = (count + 1) % period
         obs, step_reward, done, info = env.step(np.array([[steer, speed]]))
         laptime += step_reward
         env.render(mode='human')
 
         # time.sleep(.02)
+    
+    with open(f"p{period}_{num_hit}hit{num_miss}miss.tsv", "w") as file:
+        file.write("x\ty\ttheta\tsteer\n")
+        file.writelines(map(lambda ls : f"{ls[0]}\t{ls[1]}\t{ls[2]}\t{ls[3]}\n", list(path)[::period]))
         
     print('Sim elapsed time:', laptime, 'Real elapsed time:', time.time()-start)
 
