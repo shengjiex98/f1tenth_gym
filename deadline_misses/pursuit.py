@@ -82,7 +82,8 @@ def main():
 
     planner = PurePursuitPlanner(conf, 0.17145+0.15875, hold=True, kill=True)
 
-    path = collections.deque(maxlen=500)
+    # path = collections.deque(maxlen=500)
+    path = []
     drawn_path = []
 
     def render_callback(env_renderer):
@@ -138,7 +139,7 @@ def main():
 
     delayed = 6.5, 0
 
-    time_span = 3
+    time_span = 5
     count = 0
     for i in range(0, time_span * 100):
 
