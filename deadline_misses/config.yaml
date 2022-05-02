@@ -9,7 +9,7 @@ map_ext: '.png'
 
 # starting pose for map
 sx: 0.0
-sy: 0.1
+sy: 1.0
 stheta: 0.0
 sv: 6.5
 

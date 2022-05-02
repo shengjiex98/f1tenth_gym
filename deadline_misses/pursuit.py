@@ -1,10 +1,12 @@
-import collections
 import itertools
+from random import Random
+import sys
 import time
 import yaml
 import gym
 import numpy as np
 from argparse import Namespace
+from RandomSampling import RandSampling
 
 from pyglet.gl import GL_POINTS, GL_LINES, GL_LINE_STRIP
 
@@ -134,14 +136,19 @@ def main():
     num_hit = 1
     num_miss = 0
 
+    H = 150
+    K = 7
+    sampler = RandSampling(H=H, K_miss=K)
+    hit_pattern = iter(sampler.getARandSampleKMissesRGA())
+
     # hit_pattern = itertools.cycle([True] * num_hit + [False] * num_miss)
-    hit_pattern = itertools.cycle([False] * num_miss + [True] * num_hit)
+    # hit_pattern = itertools.cycle([False] * num_miss + [True] * num_hit)
 
     delayed = 6.5, 0
 
     time_span = 5
     count = 0
-    for i in range(0, time_span * 100):
+    for i in range(0, H*period):
 
         if not count:
             # speed, steer = planner.plan(obs['poses_x'][0], obs['poses_y'][0], obs['poses_theta'][0], 
@@ -157,10 +164,10 @@ def main():
         obs, step_reward, done, info = env.step(np.array([[steer, speed]]))
         laptime += step_reward
         env.render(mode='human')
-
         # time.sleep(.02)
     
-    with open(f"p{period}_{num_hit}hit{num_miss}miss.tsv", "w") as file:
+    # with open(f"statistical/nominal.tsv", "w") as file:
+    with open(f"statistical/H{H}_K{K}_{sys.argv[1]}.tsv", "w") as file:
         file.write("x\ty\ttheta\tsteer\n")
         file.writelines(map(lambda ls : f"{ls[0]}\t{ls[1]}\t{ls[2]}\t{ls[3]}\n", list(path)[::period]))
         
